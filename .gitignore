@@ -1,0 +1,25 @@
+# Build outputs
+bin/
+obj/
+x64/
+Debug/
+Release/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.cachefile
+*.VC.db
+*.VC.opendb
+ipch/
+
+# Dependencies (downloaded separately)
+deps/
+
+# OS
+.DS_Store
+Thumbs.db
