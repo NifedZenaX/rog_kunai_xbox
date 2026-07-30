@@ -81,6 +81,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\HidDevice.cpp" />
+    <ClCompile Include="src\ButtonMapping.cpp" />
+    <ClCompile Include="src\XboxController.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\HidDevice.h" />
+    <ClInclude Include="src\ButtonMapping.h" />
+    <ClInclude Include="src\XboxController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
