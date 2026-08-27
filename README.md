@@ -5,44 +5,60 @@ to a virtual Xbox 360 controller via ViGEmBus. Games see a standard Xbox pad.
 
 ## Prerequisites
 
-### 1. Install ViGEmBus Driver
-Download and install the latest `.msi` from:
-https://github.com/nefarius/ViGEmBus/releases
+### 1. Install ViGEmBus Driver (v1.22.0)
 
-This is the only external dependency — it's an open-source kernel driver that
-lets user-mode programs create virtual game controllers. Windows has no native
-equivalent.
+Download and install `ViGEmBus_Setup_x64.msi` from:
+https://github.com/nefarius/ViGEmBus/releases/tag/v1.22.0
 
-### 2. Download ViGEmClient SDK
-Download the latest release `.zip` from:
-https://github.com/nefarius/ViGEmClient/releases
+Reboot after installation. This is the only external dependency — an open-source
+kernel driver that lets user-mode programs create virtual game controllers.
 
-Extract it so the folder structure looks like:
-```
-rog_kunai_xbox/
-  deps/
-    ViGEmClient/
-      include/
-        ViGEm/
-          Client.h
-          Common.h
-      lib/
-        release/
-          x64/
-            ViGEmClient.lib
-  src/
-    main.cpp
-  rog_kunai_xbox.sln
-  rog_kunai_xbox.vcxproj
-```
+> **Note:** The project was archived in Nov 2023 but the driver still works on
+> Windows 10/11. There is no maintained alternative.
 
-Also copy `ViGEmClient.dll` from the SDK's `bin/release/x64/` folder next to
-your built `.exe` (in `bin/Debug/` or `bin/Release/`).
+### 2. Build ViGEmClient Library
 
-### 3. Build
+The ViGEmClient SDK does **not** ship pre-built binaries — you must build it
+from source.
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/nefarius/ViGEmClient.git
+   ```
+
+2. Open `ViGEmClient.sln` in Visual Studio 2022
+
+3. Set the configuration to **Release_LIB | x64** (static library, no DLL needed)
+
+4. Build the solution (Ctrl+Shift+B)
+
+5. Copy the output into this project's `deps/` folder:
+   ```
+   rog_kunai_xbox/
+     deps/
+       ViGEmClient/
+         include/          <-- copy from ViGEmClient/include/
+           ViGEm/
+             Client.h
+             Common.h
+             Util.h
+         lib/
+           x64/
+             ViGEmClient.lib   <-- copy from ViGEmClient build output
+   ```
+
+   The build output location depends on your VS setup but is typically:
+   `ViGEmClient/bin/Release_LIB/x64/ViGEmClient.lib`
+   or check your Output window for the exact path.
+
+### 3. Build This Project
+
 1. Open `rog_kunai_xbox.sln` in Visual Studio 2022
 2. Select **x64** platform and **Debug** or **Release**
 3. Build → Build Solution (Ctrl+Shift+B)
+
+The output `.exe` will be in `bin/Debug/` or `bin/Release/`. Since we link
+statically (Release_LIB), no DLL is needed at runtime.
 
 ## Usage
 
@@ -58,7 +74,7 @@ rog_kunai_xbox.exe --device 0          # Use device 0 explicitly
 The default mapping matches the typical ASUS HID gamepad report layout. If
 buttons are wrong, run `--dump <index>` and press each button one at a time to
 see which bytes/bits change. Then edit the `KunaiReportLayout` struct in
-`main.cpp` to match your device's actual report format.
+`src/ButtonMapping.h` to match your device's actual report format.
 
 Press **Ctrl+C** to stop the program and remove the virtual controller.
 
@@ -71,4 +87,6 @@ Press **Ctrl+C** to stop the program and remove the virtual controller.
 - **No ASUS device found** — Use `--list` to find your device index, then
   `--device <N>` to select it manually.
 - **Buttons are wrong** — Use `--dump` to see the raw report and adjust
-  `KunaiReportLayout` byte offsets and bit masks.
+  `KunaiReportLayout` byte offsets and bit masks in `src/ButtonMapping.h`.
+- **Linker errors about ViGEmClient** — Make sure you built with `Release_LIB`
+  (not `Release_DLL`) and placed `ViGEmClient.lib` at `deps/ViGEmClient/lib/x64/`.
