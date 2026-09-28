@@ -21,15 +21,7 @@ static void SignalHandler(int) { g_running = false; }
 
 // ─── Commands ───────────────────────────────────────────────────────────────
 
-static void CmdListDevices() {
-    auto devices = EnumerateHidGamepads();
-    if (devices.empty()) {
-        printf("No HID gamepads found.\n");
-        printf("Make sure your ROG Kunai Gamepad 3 is connected.\n");
-        return;
-    }
-
-    printf("Found %zu HID gamepad(s):\n\n", devices.size());
+static void PrintDeviceList(const std::vector<HidDeviceInfo>& devices) {
     for (size_t i = 0; i < devices.size(); ++i) {
         auto& d = devices[i];
         printf("  [%zu] VID:%04X PID:%04X  Usage:%02X/%02X  ReportLen:%lu\n",
@@ -42,14 +34,42 @@ static void CmdListDevices() {
             printf("      ** ASUS device detected **\n");
         printf("\n");
     }
+}
+
+static void CmdListDevices() {
+    auto devices = EnumerateHidGamepads();
+    if (devices.empty()) {
+        printf("No HID gamepads found.\n\n");
+        printf("Your device may not report itself as a Joystick/Gamepad.\n");
+        printf("Run --list-all to see every connected HID device.\n");
+        return;
+    }
+
+    printf("Found %zu HID gamepad(s):\n\n", devices.size());
+    PrintDeviceList(devices);
     printf("Use --device <index> to select a specific device.\n");
     printf("Use --dump <index> to see raw HID reports for mapping.\n");
 }
 
-static void CmdDumpReports(int deviceIndex) {
-    auto devices = EnumerateHidGamepads();
+static void CmdListAllDevices() {
+    auto devices = EnumerateAllHidDevices();
+    if (devices.empty()) {
+        printf("No HID devices found at all. This is unusual.\n");
+        printf("Try running as Administrator.\n");
+        return;
+    }
+
+    printf("All %zu HID device(s) (unfiltered):\n\n", devices.size());
+    PrintDeviceList(devices);
+    printf("Look for your gamepad above (ASUS vendor ID is 0B05).\n");
+    printf("Then use --dump-all <index> to inspect its raw reports.\n");
+}
+
+static void CmdDumpReports(int deviceIndex, bool unfiltered) {
+    auto devices = unfiltered ? EnumerateAllHidDevices() : EnumerateHidGamepads();
     if (deviceIndex < 0 || deviceIndex >= static_cast<int>(devices.size())) {
-        printf("Invalid device index %d. Use --list to see devices.\n", deviceIndex);
+        printf("Invalid device index %d. Use %s to see devices.\n",
+               deviceIndex, unfiltered ? "--list-all" : "--list");
         return;
     }
 
@@ -82,8 +102,8 @@ static void CmdDumpReports(int deviceIndex) {
     CloseHandle(hDev);
 }
 
-static int CmdRun(int deviceIndex) {
-    auto devices = EnumerateHidGamepads();
+static int CmdRun(int deviceIndex, bool unfiltered) {
+    auto devices = unfiltered ? EnumerateAllHidDevices() : EnumerateHidGamepads();
 
     if (deviceIndex < 0) {
         for (size_t i = 0; i < devices.size(); ++i) {
@@ -95,8 +115,8 @@ static int CmdRun(int deviceIndex) {
             }
         }
         if (deviceIndex < 0) {
-            printf("No ASUS gamepad found. Use --list to see connected devices,\n");
-            printf("then --device <index> to select one manually.\n");
+            printf("No ASUS gamepad found. Use --list or --list-all to see\n");
+            printf("connected devices, then --device <index> to select one.\n");
             return 1;
         }
     }
@@ -173,14 +193,27 @@ int main(int argc, char* argv[]) {
         CmdListDevices();
         return 0;
     }
+    if (argc >= 2 && strcmp(argv[1], "--list-all") == 0) {
+        CmdListAllDevices();
+        return 0;
+    }
     if (argc >= 3 && strcmp(argv[1], "--dump") == 0) {
-        CmdDumpReports(atoi(argv[2]));
+        CmdDumpReports(atoi(argv[2]), false);
+        return 0;
+    }
+    if (argc >= 3 && strcmp(argv[1], "--dump-all") == 0) {
+        CmdDumpReports(atoi(argv[2]), true);
         return 0;
     }
 
     int deviceIndex = -1;
+    bool unfiltered = false;
     if (argc >= 3 && strcmp(argv[1], "--device") == 0)
         deviceIndex = atoi(argv[2]);
+    if (argc >= 3 && strcmp(argv[1], "--device-all") == 0) {
+        deviceIndex = atoi(argv[2]);
+        unfiltered = true;
+    }
 
-    return CmdRun(deviceIndex);
+    return CmdRun(deviceIndex, unfiltered);
 }

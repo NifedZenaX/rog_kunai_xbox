@@ -1,6 +1,6 @@
 #include "HidDevice.h"
 
-std::vector<HidDeviceInfo> EnumerateHidGamepads() {
+static std::vector<HidDeviceInfo> EnumerateHid(bool gamepadsOnly) {
     std::vector<HidDeviceInfo> devices;
     GUID hidGuid;
     HidD_GetHidGuid(&hidGuid);
@@ -47,7 +47,7 @@ std::vector<HidDeviceInfo> EnumerateHidGamepads() {
         bool isGamepad = caps.UsagePage == 0x01
             && (caps.Usage == 0x04 || caps.Usage == 0x05);
 
-        if (isGamepad) {
+        if (!gamepadsOnly || isGamepad) {
             HidDeviceInfo info = {};
             info.path = detail->DevicePath;
             info.vendorId = attrs.VendorID;
@@ -68,6 +68,14 @@ std::vector<HidDeviceInfo> EnumerateHidGamepads() {
     }
     SetupDiDestroyDeviceInfoList(devInfoSet);
     return devices;
+}
+
+std::vector<HidDeviceInfo> EnumerateHidGamepads() {
+    return EnumerateHid(true);
+}
+
+std::vector<HidDeviceInfo> EnumerateAllHidDevices() {
+    return EnumerateHid(false);
 }
 
 HANDLE OpenHidDevice(const std::wstring& path) {

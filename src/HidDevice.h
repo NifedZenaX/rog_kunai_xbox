@@ -26,4 +26,8 @@ struct HidDeviceInfo {
 
 std::vector<HidDeviceInfo> EnumerateHidGamepads();
 
+// Every HID device, no usage-page filtering. Diagnostic for when a pad
+// doesn't report itself as Joystick/Gamepad.
+std::vector<HidDeviceInfo> EnumerateAllHidDevices();
+
 HANDLE OpenHidDevice(const std::wstring& path);
